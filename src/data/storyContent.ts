@@ -5,8 +5,8 @@ export const storyContent: StoryContentConfig = {
     classroom: '12A1',
     occasion: '20/10 — Ngày Phụ Nữ Việt Nam',
     theme: "The Flower's Secret Garden — Khu Vườn Của Những Lời Chưa Nói",
-    musicTrack: './audio/tung-ngay-yeu-em.mp3',
-    musicTitle: 'Từng Ngày Yêu Em — Bùi Trường Linh',
+    musicTrack: './audio/tung-ngay-yeu-em-piano.mp3',
+    musicTitle: 'Từng Ngày Yêu Em (Piano) — Bùi Trường Linh',
   },
   scenes: [
     {

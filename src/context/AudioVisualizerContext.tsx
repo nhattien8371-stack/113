@@ -43,9 +43,9 @@ const CHIME_MELODY = [
 
 export const AudioVisualizerProvider: React.FC<AudioProviderProps> = ({
   children,
-  primarySrc = `${import.meta.env.BASE_URL || './'}audio/tung-ngay-yeu-em.mp3`,
-  fallbackSrc = `${import.meta.env.BASE_URL || './'}audio/Từng Ngày Yêu Em.mp3`,
-  title = 'Từng Ngày Yêu Em — Bùi Trường Linh',
+  primarySrc = `${import.meta.env.BASE_URL || './'}audio/tung-ngay-yeu-em-piano.mp3`,
+  fallbackSrc = `${import.meta.env.BASE_URL || './'}audio/tung-ngay-yeu-em.mp3`,
+  title = 'Từng Ngày Yêu Em (Piano) — Bùi Trường Linh',
 }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [hasInteracted, setHasInteracted] = useState(false);
@@ -68,14 +68,6 @@ export const AudioVisualizerProvider: React.FC<AudioProviderProps> = ({
   const isPlayingRef = useRef(false);
   const audioTypeRef = useRef<AudioSourceType>('none');
 
-  // Environment detection: local development supports testing local commercial MP3;
-  // public GitHub Pages uses licensed Web Audio Celesta Music Box directly without 404 loops.
-  const isLocalEnvironment =
-    typeof window !== 'undefined' &&
-    (window.location.hostname === 'localhost' ||
-      window.location.hostname === '127.0.0.1' ||
-      window.location.hostname === '0.0.0.0' ||
-      Boolean(import.meta.env.DEV));
 
   // Update refs when state changes
   useEffect(() => {
@@ -210,7 +202,6 @@ export const AudioVisualizerProvider: React.FC<AudioProviderProps> = ({
     const audio = new Audio();
     audio.loop = true;
     audio.preload = 'auto';
-    audio.crossOrigin = 'anonymous';
     audioRef.current = audio;
 
     // Continuous 60fps Visualizer Animation Loop
@@ -324,10 +315,10 @@ export const AudioVisualizerProvider: React.FC<AudioProviderProps> = ({
     }
 
     const audio = audioRef.current;
+    if (!audio) return;
 
-    // Check if public production: if not local or if file check previously failed,
-    // start Celesta Music Box directly without triggering 404 network requests
-    if (!isLocalEnvironment || fileCheckFailedRef.current || !audio) {
+    // If file playback previously failed completely on this device, use synth directly
+    if (fileCheckFailedRef.current) {
       setAudioType('synth');
       setActiveTitle('Giai Điệu Khu Vườn ♫');
       setIsPlaying(true);
@@ -347,7 +338,42 @@ export const AudioVisualizerProvider: React.FC<AudioProviderProps> = ({
       }
     }
 
-    // Local development: attempt playing local audio track
+    // Restore master gain in case it was faded out
+    if (ctx && gainNodeRef.current) {
+      const now = ctx.currentTime;
+      gainNodeRef.current.gain.cancelScheduledValues(now);
+      gainNodeRef.current.gain.setValueAtTime(0.35, now);
+    }
+
+    // Resume if already loaded and paused
+    if (audio.src && audio.src.includes('audio') && audio.currentTime > 0 && !audio.ended) {
+      audio
+        .play()
+        .then(() => {
+          setAudioType('file');
+          setActiveTitle(title);
+          setIsPlaying(true);
+          let vol = audio.volume;
+          const fade = setInterval(() => {
+            if (vol < 0.65) {
+              vol += 0.05;
+              if (audio) audio.volume = Math.min(0.65, vol);
+            } else {
+              clearInterval(fade);
+            }
+          }, 40);
+        })
+        .catch(() => {
+          fileCheckFailedRef.current = true;
+          setAudioType('synth');
+          setActiveTitle('Giai Điệu Khu Vườn ♫');
+          setIsPlaying(true);
+          startFallbackMelody();
+        });
+      return;
+    }
+
+    // Play primary audio track with smooth volume fade-in
     audio.volume = 0.05;
     audio.src = primarySrc;
     audio
@@ -356,7 +382,6 @@ export const AudioVisualizerProvider: React.FC<AudioProviderProps> = ({
         setAudioType('file');
         setActiveTitle(title);
         setIsPlaying(true);
-        // Smooth volume fade-in
         let vol = 0.05;
         const fade = setInterval(() => {
           if (vol < 0.65) {
@@ -367,8 +392,8 @@ export const AudioVisualizerProvider: React.FC<AudioProviderProps> = ({
           }
         }, 50);
       })
-      .catch(() => {
-        // Fallback to secondary source
+      .catch((err) => {
+        console.warn('Primary audio playback error, checking fallback:', err);
         if (fallbackSrc && fallbackSrc !== primarySrc) {
           audio.src = fallbackSrc;
           audio
@@ -379,7 +404,6 @@ export const AudioVisualizerProvider: React.FC<AudioProviderProps> = ({
               setIsPlaying(true);
             })
             .catch(() => {
-              // Mark file unavailable so subsequent toggles don't loop 404s
               fileCheckFailedRef.current = true;
               setAudioType('synth');
               setActiveTitle('Giai Điệu Khu Vườn ♫');
@@ -396,7 +420,6 @@ export const AudioVisualizerProvider: React.FC<AudioProviderProps> = ({
       });
   }, [
     getAudioContext,
-    isLocalEnvironment,
     primarySrc,
     fallbackSrc,
     title,

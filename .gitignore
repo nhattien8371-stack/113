@@ -27,6 +27,7 @@ screenshots/
 # Copyrighted audio files (preserve licensing & avoid DMCA on public repos)
 public/audio/*.mp3
 !public/audio/README.md
+!public/audio/tung-ngay-yeu-em-piano.mp3
 
 # Editor directories and files
 .vscode/*
