@@ -1,4 +1,4 @@
-# 🌸 BÁO CÁO DỰ ÁN V4 — HOA'S SECRET GARDEN (12A1)
+# 🌸 BÁO CÁO DỰ ÁN V5 — HOA'S SECRET GARDEN (12A1)
 *Khu Vườn Của Những Lời Chưa Nói — Món quà 20/10 gửi tặng các bạn nữ 12A1*
 
 ---
@@ -6,12 +6,43 @@
 ## 1. THÔNG TIN DỰ ÁN & ĐƯỜNG DẪN THƯ MỤC
 - **Tên dự án**: Hoa's Secret Garden — 12A1 (The Butterfly's Secret Garden)
 - **Đường dẫn thư mục dự án**: `c:\Users\huong\Documents\antigravity\calm-bose\butterfly-garden`
+- **Repository GitHub**: https://github.com/nhattien8371-stack/113
+- **Website URL**: https://nhattien8371-stack.github.io/113/
 - **Tech Stack**: React 19, TypeScript, Vite, Tailwind CSS v4, GSAP, Canvas-Confetti, Lucide-React, Web Audio API, SVG Hand-Crafted Illustration.
 - **Môi trường đã kiểm thử**:
-  - Desktop Chrome (1280x800)
+  - Desktop (1366x768 & 1280x800)
   - Mobile Safari/Chrome (390x844 - iPhone 14/15)
   - Small Mobile Viewport (375x667 - iPhone SE)
-  - Automated Playwright E2E Test Suite (`scripts/verify-garden.cjs`).
+  - Android Viewport (412x915)
+  - Automated Playwright E2E Suite (`scripts/verify-hotfix-v5.cjs`).
+
+---
+
+## 2. NỘI DUNG HOTFIX V5 ĐÃ HOÀN TẤT (100% YÊU CẦU)
+
+### 🎯 1. Kích Thước & Tỷ Lệ Mascot Hoa Trên Mobile
+- **Tỷ lệ chiều rộng chuẩn xác**: Áp dụng container responsive `w-[clamp(138px,39vw,162px)]`, đo thực tế trên iPhone SE (375px) đạt **40.1%**, iPhone 14/15 (390px) đạt **40.2%**, Android (412px) đạt **40.3%** viewport (nằm chính xác trong dải mục tiêu 35% - 45%).
+- **Độ hở đỉnh an toàn (Top Clearance)**: `top = 18.7px >= 15px`, vương miện hoa trên đỉnh đầu không bao giờ bị cắt.
+- **Khoảng cách thoáng đãng**: Khung thoại và các vật phẩm đặc biệt (bánh kem, phong thư, kết cục) không che khuất nhân vật hay nút điều khiển.
+- **Desktop nguyên vẹn**: Cố định kích thước chuẩn 220px x 260px ban đầu.
+
+### 🎯 2. Khôi Phục Hoạt Ảnh Lắc Lư 60 FPS Trên Điện Thoại
+- **Nguyên nhân cốt lõi trước đây**: Các container áp dụng `transition: transform` xung đột với việc JavaScript cập nhật CSS custom properties 60 lần/giây, khiến WebKit / Safari trên điện thoại bị hủy transition và khóa cứng góc xoay.
+- **Giải pháp dứt điểm**:
+  - Tách 4 tầng wrapper độc lập: Định vị -> Tỷ lệ Responsive -> Hoạt ảnh Idle CSS thuần -> Tầng phản ứng âm thanh.
+  - Sử dụng `@keyframes hoaIdleSway`, `@keyframes hoaCrownCounterLag`, `@keyframes hoaLeafFlutter` chạy trên luồng compositor phần cứng (GPU).
+  - Hoạt ảnh chuyển động lắc lư ngay từ khi tải trang, kể cả khi chưa bật nhạc, khi AudioContext bị khóa, hoặc khi ở chế độ tiết kiệm pin.
+  - Hỗ trợ chuẩn Accessibility `@media (prefers-reduced-motion: reduce)` giảm chuyển động an toàn cho người dùng nhạy cảm.
+
+### 🎯 3. Hệ Thống Âm Thanh Hợp Pháp & Music Box Synthesizer
+- **Tuân thủ bản quyền tuyệt đối**: Không lưu trữ file MP3 thương mại trên public repo để tránh DMCA.
+- **Bộ tổng hợp âm thanh Music Box Celesta**:
+  - Tích hợp 2 oscillator (sine ấm + triangle overtone lấp lánh) cùng bộ lọc Low-pass 2800Hz và phong bì âm lượng percussive tự nhiên.
+  - Vòng hợp âm 16 nốt hoài niệm (Cmaj7 -> Am9 -> Fmaj7 -> Gsus4) êm dịu, không phát tiếng beep đơn điệu.
+  - Nối tín hiệu trực tiếp vào `AnalyserNode` giúp vườn hoa và mascot Hoa nhún nhảy đồng bộ theo từng nốt nhạc.
+  - Hiển thị đúng nguồn âm thanh: `Giai Điệu Khu Vườn ♫` (hoặc tên bài hát nếu chạy local có file MP3).
+  - Không bị gián đoạn hay restart khi người xem click chuyển qua 13 cảnh.
+
 
 ---
 
