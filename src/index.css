@@ -138,3 +138,75 @@ html, body, #root {
     transform: translateY(0);
   }
 }
+
+/* Hoa Mascot Dedicated Hardware-Accelerated Animations */
+@keyframes hoaIdleSway {
+  0% {
+    transform: translateY(0px) rotate(-3.5deg);
+  }
+  25% {
+    transform: translateY(-3.5px) rotate(-1.2deg);
+  }
+  50% {
+    transform: translateY(-5.5px) rotate(3.5deg);
+  }
+  75% {
+    transform: translateY(-2.5px) rotate(1.2deg);
+  }
+  100% {
+    transform: translateY(0px) rotate(-3.5deg);
+  }
+}
+
+@keyframes hoaCrownCounterLag {
+  0% {
+    transform: rotate(2deg);
+  }
+  50% {
+    transform: rotate(-2deg);
+  }
+  100% {
+    transform: rotate(2deg);
+  }
+}
+
+@keyframes hoaLeafFlutter {
+  0%, 100% {
+    transform: rotate(0deg);
+  }
+  50% {
+    transform: rotate(3.5deg);
+  }
+}
+
+.hoa-idle-sway {
+  animation: hoaIdleSway 3.4s ease-in-out infinite;
+  transform-origin: 50% 80%;
+  will-change: transform;
+}
+
+.hoa-crown-lag {
+  animation: hoaCrownCounterLag 3.4s ease-in-out infinite;
+  transform-origin: 110px 85px;
+}
+
+.hoa-leaf-flutter {
+  animation: hoaLeafFlutter 2.8s ease-in-out infinite;
+}
+
+/* Accessibility: Gracefully reduce motion if requested */
+@media (prefers-reduced-motion: reduce) {
+  .hoa-idle-sway {
+    animation: none !important;
+  }
+  .hoa-crown-lag {
+    animation: none !important;
+  }
+  .hoa-leaf-flutter {
+    animation: none !important;
+  }
+  .animate-petal {
+    animation: none !important;
+    opacity: 0.3;
+  }
+}

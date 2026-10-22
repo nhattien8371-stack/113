@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useEffect, useRef, useState, useCallback } from 'react';
 
+export type AudioSourceType = 'file' | 'synth' | 'none';
+
 interface AudioVisualizerContextType {
   isPlaying: boolean;
   hasInteracted: boolean;
@@ -7,6 +9,7 @@ interface AudioVisualizerContextType {
   startMusic: () => void;
   stopMusic: () => void;
   audioTitle: string;
+  audioType: AudioSourceType;
 }
 
 const AudioVisualizerContext = createContext<AudioVisualizerContextType | null>(null);
@@ -18,6 +21,26 @@ interface AudioProviderProps {
   title?: string;
 }
 
+// 16-step nostalgic, heartwarming garden melody (Key of C / Am, ~86 BPM cadence)
+const CHIME_MELODY = [
+  523.25,  // C5
+  659.25,  // E5
+  783.99,  // G5
+  987.77,  // B5
+  1046.50, // C6
+  783.99,  // G5
+  659.25,  // E5
+  880.00,  // A5
+  523.25,  // C5
+  587.33,  // D5
+  659.25,  // E5
+  783.99,  // G5
+  987.77,  // B5
+  880.00,  // A5
+  659.25,  // E5
+  587.33,  // D5
+];
+
 export const AudioVisualizerProvider: React.FC<AudioProviderProps> = ({
   children,
   primarySrc = `${import.meta.env.BASE_URL || './'}audio/tung-ngay-yeu-em.mp3`,
@@ -26,6 +49,8 @@ export const AudioVisualizerProvider: React.FC<AudioProviderProps> = ({
 }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [hasInteracted, setHasInteracted] = useState(false);
+  const [audioType, setAudioType] = useState<AudioSourceType>('none');
+  const [activeTitle, setActiveTitle] = useState<string>('Bật nhạc');
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
@@ -34,68 +59,126 @@ export const AudioVisualizerProvider: React.FC<AudioProviderProps> = ({
   const sourceNodeRef = useRef<MediaElementAudioSourceNode | null>(null);
   const animFrameRef = useRef<number | null>(null);
   const synthIntervalRef = useRef<number | null>(null);
+  const noteIndexRef = useRef(0);
 
   // Dynamic visualizer state refs (to avoid React re-renders at 60fps)
   const energyRef = useRef(0); // 0 (idle) to 1 (full music reactivity)
   const smoothedBassRef = useRef(0);
   const isPlayingRef = useRef(false);
+  const audioTypeRef = useRef<AudioSourceType>('none');
 
-  // Update ref when state changes
+  // Update refs when state changes
   useEffect(() => {
     isPlayingRef.current = isPlaying;
-  }, [isPlaying]);
+    audioTypeRef.current = audioType;
+  }, [isPlaying, audioType]);
 
-  // Fallback gentle chime synthesizer using Web Audio API
-  const playFallbackNote = useCallback((freq: number) => {
+  // Safe AudioContext getter
+  const getAudioContext = useCallback(() => {
+    if (!audioCtxRef.current || audioCtxRef.current.state === 'closed') {
+      const AudioContextClass =
+        window.AudioContext ||
+        (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      const ctx = new AudioContextClass();
+      const analyser = ctx.createAnalyser();
+      analyser.fftSize = 256;
+      analyser.smoothingTimeConstant = 0.82;
+
+      const gainNode = ctx.createGain();
+      gainNode.gain.setValueAtTime(0.22, ctx.currentTime);
+      gainNode.connect(ctx.destination);
+
+      audioCtxRef.current = ctx;
+      analyserRef.current = analyser;
+      gainNodeRef.current = gainNode;
+    }
+    return audioCtxRef.current;
+  }, []);
+
+  // Sweet, delicate Music Box / Celesta chime synthesizer
+  const playCelestaNote = useCallback((freq: number) => {
     try {
-      if (!audioCtxRef.current) {
-        const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-        audioCtxRef.current = new AudioContextClass();
-      }
-      const ctx = audioCtxRef.current;
+      const ctx = getAudioContext();
+      if (!ctx || ctx.state === 'closed') return;
       if (ctx.state === 'suspended') {
-        ctx.resume();
+        ctx.resume().catch(() => {});
       }
 
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
+      const now = ctx.currentTime;
+      const masterGain = gainNodeRef.current;
+      const analyser = analyserRef.current;
 
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(freq, ctx.currentTime);
+      // 1. Primary fundamental tone (warm sine wave)
+      const osc1 = ctx.createOscillator();
+      osc1.type = 'sine';
+      osc1.frequency.setValueAtTime(freq, now);
 
-      gain.gain.setValueAtTime(0, ctx.currentTime);
-      gain.gain.linearRampToValueAtTime(0.04, ctx.currentTime + 0.05);
-      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 2.0);
+      // 2. Harmonic overtone (gentle octave chime shimmer with subtle detune)
+      const osc2 = ctx.createOscillator();
+      osc2.type = 'triangle';
+      osc2.frequency.setValueAtTime(freq * 2.002, now);
 
-      osc.connect(gain);
-      if (analyserRef.current) {
+      // 3. Envelopes
+      const noteGain = ctx.createGain();
+      noteGain.gain.setValueAtTime(0.0001, now);
+      noteGain.gain.linearRampToValueAtTime(0.08, now + 0.006); // Soft chime strike
+      noteGain.gain.exponentialRampToValueAtTime(0.0001, now + 1.85); // Natural ring decay
+
+      const overtoneGain = ctx.createGain();
+      overtoneGain.gain.setValueAtTime(0.022, now);
+      overtoneGain.gain.exponentialRampToValueAtTime(0.0001, now + 1.1);
+
+      // 4. Low-pass filter for silky soft acoustic character
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(2800, now);
+
+      // Connect graph
+      osc1.connect(noteGain);
+      osc2.connect(overtoneGain);
+      overtoneGain.connect(noteGain);
+      noteGain.connect(filter);
+
+      if (masterGain) {
+        filter.connect(masterGain);
+      } else {
+        filter.connect(ctx.destination);
+      }
+
+      // Feed frequency analyser so the garden blooms & sways to the chime!
+      if (analyser) {
         try {
-          gain.connect(analyserRef.current);
+          filter.connect(analyser);
         } catch {
-          // Ignore connection error if already closed
+          // ignore duplicate connect
         }
       }
-      if (gainNodeRef.current) {
-        gain.connect(gainNodeRef.current);
-      } else {
-        gain.connect(ctx.destination);
-      }
 
-      osc.start();
-      osc.stop(ctx.currentTime + 2.1);
+      osc1.start(now);
+      osc2.start(now);
+      osc1.stop(now + 1.9);
+      osc2.stop(now + 1.9);
     } catch {
       // AudioContext fallback
     }
-  }, []);
+  }, [getAudioContext]);
 
+  // Start the Music Box Melodic Arpeggio Loop
   const startFallbackMelody = useCallback(() => {
-    const melody = [523.25, 659.25, 783.99, 1046.5, 880.0, 783.99, 659.25, 587.33];
-    let noteIdx = 0;
+    if (synthIntervalRef.current !== null) {
+      clearInterval(synthIntervalRef.current);
+    }
+
+    // Play first note immediately
+    playCelestaNote(CHIME_MELODY[noteIndexRef.current % CHIME_MELODY.length]);
+    noteIndexRef.current++;
+
+    // Then play subsequent notes at ~460ms intervals (relaxing, soothing tempo)
     synthIntervalRef.current = window.setInterval(() => {
-      playFallbackNote(melody[noteIdx % melody.length]);
-      noteIdx++;
-    }, 1300);
-  }, [playFallbackNote]);
+      playCelestaNote(CHIME_MELODY[noteIndexRef.current % CHIME_MELODY.length]);
+      noteIndexRef.current++;
+    }, 460);
+  }, [playCelestaNote]);
 
   const stopFallbackMelody = useCallback(() => {
     if (synthIntervalRef.current !== null) {
@@ -104,60 +187,15 @@ export const AudioVisualizerProvider: React.FC<AudioProviderProps> = ({
     }
   }, []);
 
-  // Initialize Audio & Web Audio API
+  // Initialize HTMLAudioElement and Visualizer Loop
   useEffect(() => {
     const audio = new Audio();
     audio.loop = true;
     audio.preload = 'auto';
     audio.crossOrigin = 'anonymous';
-
-    // Try primary source, with fallback event listener
-    audio.src = primarySrc;
-    audio.addEventListener('error', () => {
-      console.warn(`Primary audio ${primarySrc} error, trying fallback ${fallbackSrc}`);
-      if (audio.src !== fallbackSrc) {
-        audio.src = fallbackSrc;
-        audio.load();
-      }
-    });
-
     audioRef.current = audio;
 
-    // Initialize Web Audio Context & Analyser lazily or on user interaction
-    const initWebAudio = () => {
-      if (audioCtxRef.current) return;
-      try {
-        const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-        const ctx = new AudioContextClass();
-        const analyser = ctx.createAnalyser();
-        analyser.fftSize = 256;
-        analyser.smoothingTimeConstant = 0.82;
-
-        const gainNode = ctx.createGain();
-        gainNode.gain.setValueAtTime(0.001, ctx.currentTime);
-
-        if (!sourceNodeRef.current && audioRef.current) {
-          try {
-            const source = ctx.createMediaElementSource(audioRef.current);
-            source.connect(analyser);
-            sourceNodeRef.current = source;
-          } catch (e) {
-            console.warn('MediaElementSource initialization notice:', e);
-          }
-        }
-
-        analyser.connect(gainNode);
-        gainNode.connect(ctx.destination);
-
-        audioCtxRef.current = ctx;
-        analyserRef.current = analyser;
-        gainNodeRef.current = gainNode;
-      } catch (err) {
-        console.warn('Web Audio initialization fallback:', err);
-      }
-    };
-
-    // Continuous 60fps Animation Loop updating CSS variables on document.documentElement
+    // Continuous 60fps Visualizer Animation Loop
     let lastTime = performance.now();
     const dataArray = new Uint8Array(128);
 
@@ -181,14 +219,12 @@ export const AudioVisualizerProvider: React.FC<AudioProviderProps> = ({
       if (analyserRef.current && isPlayingRef.current) {
         try {
           analyserRef.current.getByteFrequencyData(dataArray);
-          // Bass bins 1 to 5 (~40Hz - 180Hz for kick/bassline)
           let bassSum = 0;
           for (let i = 1; i <= 5; i++) {
             bassSum += dataArray[i];
           }
           rawBass = bassSum / (5 * 255);
 
-          // Mid bins 6 to 18 (~200Hz - 800Hz for guitar strum / vocals)
           let midSum = 0;
           for (let i = 6; i <= 18; i++) {
             midSum += dataArray[i];
@@ -197,19 +233,20 @@ export const AudioVisualizerProvider: React.FC<AudioProviderProps> = ({
         } catch {
           // Fallback if data read issues
         }
-      } else if (isPlayingRef.current) {
-        // If AnalyserNode not available or synthesiser active, generate natural tempo wave at 86 BPM
+      }
+
+      // If playing via synth or if frequency is quiet, add rhythmic tempo wave at ~86 BPM
+      if (isPlayingRef.current && (audioTypeRef.current === 'synth' || rawBass < 0.05)) {
         const tempoWave = (Math.sin(timeInSec * ((86 / 60) * Math.PI * 2)) + 1) * 0.5;
-        rawBass = 0.25 + tempoWave * 0.35;
-        rawMid = 0.2;
+        rawBass = Math.max(rawBass, 0.22 + tempoWave * 0.3);
+        rawMid = Math.max(rawMid, 0.18);
       }
 
       // Smooth bass to prevent harsh jittering, preserving musical bounce
       smoothedBassRef.current = smoothedBassRef.current * 0.78 + rawBass * 0.22;
       const smoothBass = smoothedBassRef.current;
 
-      // 3. Mathematical Rhythm Wave calculation for "Từng Ngày Yêu Em" (~86 BPM)
-      // A gentle sway period of ~2.79 seconds per measure (omega ~ 2.25 rad/s)
+      // 3. Mathematical Rhythm Wave calculation (~86 BPM, ~2.25 rad/s)
       const swayOmega = 2.25;
       const swayTime = timeInSec * swayOmega;
 
@@ -236,29 +273,16 @@ export const AudioVisualizerProvider: React.FC<AudioProviderProps> = ({
       const beatBounce = smoothBass * 0.038 * energy;
       rootStyle.setProperty('--beat-bounce', beatBounce.toFixed(4));
 
-      // 5. Mascot Hoa gentle rhythmic bobbing (±4px) and sway tilt (3° to 6°)
-      const hoaBob = (Math.sin(timeInSec * 4.5) * 2.5 + smoothBass * 3.0) * energy;
-      rootStyle.setProperty('--hoa-bob', `${hoaBob.toFixed(2)}px`);
-
-      const activeTilt = Math.sin(swayTime + 0.9) * (3.0 + smoothBass * 3.5);
-      const idleTilt = Math.sin(timeInSec * 1.35) * 1.4;
-      const hoaTilt = (idleTilt * (1 - energy)) + (activeTilt * energy);
-      rootStyle.setProperty('--hoa-tilt', hoaTilt.toFixed(3));
-
-      // 6. Grass & foliage rhythmic sway
-      const grassSway = (Math.sin(swayTime + 0.6) * (1.8 + smoothBass * 2.6) * energy) + (Math.sin(timeInSec * 1.35) * 1.0 * (1 - energy));
+      // 5. Grass & foliage rhythmic sway
+      const grassSway =
+        Math.sin(swayTime + 0.6) * (1.8 + smoothBass * 2.6) * energy +
+        Math.sin(timeInSec * 1.35) * 1.0 * (1 - energy);
       rootStyle.setProperty('--grass-sway', grassSway.toFixed(3));
-
-      // 7. Energy status
-      rootStyle.setProperty('--music-energy', energy.toFixed(3));
 
       animFrameRef.current = requestAnimationFrame(updateVisualizer);
     };
 
     animFrameRef.current = requestAnimationFrame(updateVisualizer);
-
-    // Save init function to window or ref for trigger
-    (audio as unknown as { _initAudio?: () => void })._initAudio = initWebAudio;
 
     return () => {
       if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
@@ -269,79 +293,84 @@ export const AudioVisualizerProvider: React.FC<AudioProviderProps> = ({
         audioCtxRef.current.close().catch(() => {});
       }
     };
-  }, [primarySrc, fallbackSrc, stopFallbackMelody]);
+  }, [stopFallbackMelody]);
 
-  // Start Music with smooth Fade-In
+  // Start Music
   const startMusic = useCallback(() => {
     setHasInteracted(true);
+
+    // 1. Resume AudioContext immediately on user touch/click
+    const ctx = getAudioContext();
+    if (ctx && ctx.state === 'suspended') {
+      ctx.resume().catch(() => {});
+    }
+
     const audio = audioRef.current;
-    if (!audio) return;
-
-    // Trigger Web Audio init on user gesture
-    if ((audio as unknown as { _initAudio?: () => void })._initAudio) {
-      (audio as unknown as { _initAudio?: () => void })._initAudio!();
+    if (!audio) {
+      setAudioType('synth');
+      setActiveTitle('Giai Điệu Khu Vườn ♫');
+      setIsPlaying(true);
+      startFallbackMelody();
+      return;
     }
 
-    if (audioCtxRef.current && audioCtxRef.current.state === 'suspended') {
-      audioCtxRef.current.resume().catch(() => {});
+    // Connect audio element to Web Audio once
+    if (!sourceNodeRef.current && audioCtxRef.current) {
+      try {
+        const source = audioCtxRef.current.createMediaElementSource(audio);
+        if (analyserRef.current) source.connect(analyserRef.current);
+        if (gainNodeRef.current) source.connect(gainNodeRef.current);
+        sourceNodeRef.current = source;
+      } catch {
+        // Already connected or browser restricted
+      }
     }
 
-    // Set initial volume for fade-in
-    audio.volume = 0.05;
-    if (gainNodeRef.current && audioCtxRef.current) {
-      gainNodeRef.current.gain.cancelScheduledValues(audioCtxRef.current.currentTime);
-      gainNodeRef.current.gain.setValueAtTime(0.05, audioCtxRef.current.currentTime);
-      gainNodeRef.current.gain.linearRampToValueAtTime(0.65, audioCtxRef.current.currentTime + 0.8);
-    }
-
+    // Try playing local/licensed audio track first
+    audio.src = primarySrc;
     audio
       .play()
       .then(() => {
+        setAudioType('file');
+        setActiveTitle(title);
         setIsPlaying(true);
-        // HTMLAudioElement volume fade-in
-        let vol = 0.05;
-        const fade = setInterval(() => {
-          if (vol < 0.6) {
-            vol += 0.05;
-            if (audio) audio.volume = Math.min(0.6, vol);
-          } else {
-            clearInterval(fade);
-          }
-        }, 60);
       })
-      .catch((err) => {
-        console.warn('Audio play restricted or failed, using melodic synth:', err);
-        setIsPlaying(true);
-        startFallbackMelody();
+      .catch(() => {
+        // Fallback to secondary source
+        if (fallbackSrc && fallbackSrc !== primarySrc) {
+          audio.src = fallbackSrc;
+          audio
+            .play()
+            .then(() => {
+              setAudioType('file');
+              setActiveTitle(title);
+              setIsPlaying(true);
+            })
+            .catch(() => {
+              // Seamlessly activate the sweet Celesta Music Box synthesizer
+              setAudioType('synth');
+              setActiveTitle('Giai Điệu Khu Vườn ♫');
+              setIsPlaying(true);
+              startFallbackMelody();
+            });
+        } else {
+          // Seamlessly activate the sweet Celesta Music Box synthesizer
+          setAudioType('synth');
+          setActiveTitle('Giai Điệu Khu Vườn ♫');
+          setIsPlaying(true);
+          startFallbackMelody();
+        }
       });
-  }, [startFallbackMelody]);
+  }, [getAudioContext, primarySrc, fallbackSrc, title, startFallbackMelody]);
 
-  // Stop Music with smooth Fade-Out
+  // Stop Music
   const stopMusic = useCallback(() => {
     stopFallbackMelody();
     const audio = audioRef.current;
-    if (!audio) return;
-
-    if (gainNodeRef.current && audioCtxRef.current) {
-      gainNodeRef.current.gain.cancelScheduledValues(audioCtxRef.current.currentTime);
-      gainNodeRef.current.gain.setValueAtTime(gainNodeRef.current.gain.value, audioCtxRef.current.currentTime);
-      gainNodeRef.current.gain.linearRampToValueAtTime(0.001, audioCtxRef.current.currentTime + 0.6);
+    if (audio) {
+      audio.pause();
     }
-
-    let vol = audio.volume;
-    const fade = setInterval(() => {
-      if (vol > 0.05) {
-        vol -= 0.06;
-        if (audio) audio.volume = Math.max(0, vol);
-      } else {
-        clearInterval(fade);
-        if (audio) {
-          audio.pause();
-          audio.volume = 0.6;
-        }
-        setIsPlaying(false);
-      }
-    }, 50);
+    setIsPlaying(false);
   }, [stopFallbackMelody]);
 
   // Toggle Play / Pause
@@ -361,7 +390,8 @@ export const AudioVisualizerProvider: React.FC<AudioProviderProps> = ({
         togglePlay,
         startMusic,
         stopMusic,
-        audioTitle: title,
+        audioTitle: activeTitle,
+        audioType,
       }}
     >
       {children}

@@ -294,7 +294,7 @@ export const HoaCharacter: React.FC<HoaCharacterProps> = ({
   return (
     <div
       onClick={handleInteraction}
-      className={`relative inline-block select-none cursor-pointer group transition-all duration-500 ease-out ${className}`}
+      className={`relative inline-block w-full h-full select-none cursor-pointer group ${className}`}
       style={{
         transform: `scale(${scale}) ${getTilt()}`,
         filter: 'drop-shadow(0 0 20px rgba(255, 112, 166, 0.65)) drop-shadow(0 0 38px rgba(201, 182, 242, 0.45))',
@@ -320,10 +320,9 @@ export const HoaCharacter: React.FC<HoaCharacterProps> = ({
       </div>
 
       <svg
-        width="220"
-        height="260"
         viewBox="0 0 220 260"
-        className="overflow-visible"
+        className="w-full h-full overflow-visible"
+        preserveAspectRatio="xMidYMid meet"
         style={{ transformOrigin: 'center bottom' }}
       >
         <defs>
@@ -371,19 +370,18 @@ export const HoaCharacter: React.FC<HoaCharacterProps> = ({
         />
 
         {/* ================= 1. BOUQUET CROWN FLOWERS (TOP) ================= */}
-        {/* Has independent lag motion relative to body */}
+        {/* Has independent lag motion relative to body via CSS keyframes */}
         <g
-          className="transition-transform duration-700 ease-out"
+          className="hoa-crown-lag"
           style={{
-            transform: 'rotate(calc(var(--hoa-tilt, 0) * -0.35 * 1deg))',
             transformOrigin: '110px 85px',
           }}
         >
           {/* Decorative Eucalyptus / Mint Leaves (independent gentle flutter) */}
-          <g style={{ transform: 'rotate(calc(var(--hoa-tilt, 0) * 0.25 * 1deg))', transformOrigin: '70px 85px' }}>
+          <g className="hoa-leaf-flutter" style={{ transformOrigin: '70px 85px' }}>
             <path d="M 70 85 Q 40 60 45 42 Q 62 48 74 76" fill="#88CCA0" stroke="#4F996B" strokeWidth="1.8" />
           </g>
-          <g style={{ transform: 'rotate(calc(var(--hoa-tilt, 0) * -0.25 * 1deg))', transformOrigin: '150px 85px' }}>
+          <g className="hoa-leaf-flutter" style={{ transformOrigin: '150px 85px', animationDelay: '-1.4s' }}>
             <path d="M 150 85 Q 180 60 175 42 Q 158 48 146 76" fill="#88CCA0" stroke="#4F996B" strokeWidth="1.8" />
           </g>
           <path d="M 110 50 Q 110 25 125 18 Q 132 35 116 52" fill="#7FB991" stroke="#4F996B" strokeWidth="1.5" />
@@ -548,11 +546,10 @@ export const HoaCharacter: React.FC<HoaCharacterProps> = ({
         {/* ================= 3. CUTE RIBBON BOW AT BASE ================= */}
         {/* Has independent flutter motion */}
         <g
-          transform="translate(110, 215)"
-          className="transition-transform duration-500 ease-out"
+          className="hoa-crown-lag"
           style={{
-            transform: 'translate(110px, 215px) rotate(calc(var(--hoa-tilt, 0) * 0.45 * 1deg))',
-            transformOrigin: '0 0',
+            transform: 'translate(110px, 215px)',
+            transformOrigin: '110px 215px',
           }}
         >
           {/* Left Ribbon Loop */}

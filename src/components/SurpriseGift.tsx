@@ -6,12 +6,12 @@ export const SurpriseGift: React.FC = () => {
   return (
     <div
       onClick={() => setOpened(!opened)}
-      className="relative flex flex-col items-center justify-center cursor-pointer select-none group py-4 transition-transform duration-300 hover:scale-105"
+      className="relative flex flex-col items-center justify-center cursor-pointer select-none group py-1 sm:py-3 transition-transform duration-300 hover:scale-105"
       title="Chạm vào để thổi nến hoặc mở quà nha!"
     >
       {/* Floating mini cake with candle */}
       <div className="relative animate-float-slow">
-        <svg viewBox="0 0 150 150" className="w-28 h-28 sm:w-36 sm:h-36 overflow-visible">
+        <svg viewBox="0 0 150 150" className="w-24 h-24 sm:w-32 sm:h-32 overflow-visible">
           <defs>
             <linearGradient id="cakeCreamGrad" x1="0%" y1="0%" x2="100%" y2="100%">
               <stop offset="0%" stopColor="#FFFDFC" />

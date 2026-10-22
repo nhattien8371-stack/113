@@ -25,8 +25,8 @@ export const MusicController: React.FC = () => {
               <span className="w-0.5 h-full bg-[#C9B6F2] animate-[pulse_0.7s_ease-in-out_infinite_0.4s]" />
               <span className="w-0.5 h-1/2 bg-[#B9DFC8] animate-[pulse_0.5s_ease-in-out_infinite_0.1s]" />
             </div>
-            <span className="text-xs font-medium text-[#FFE5A3] hidden md:inline max-w-[140px] truncate">
-              Từng Ngày Yêu Em
+            <span className="text-xs font-medium text-[#FFE5A3] hidden sm:inline max-w-[160px] truncate">
+              {audioTitle}
             </span>
           </>
         ) : (

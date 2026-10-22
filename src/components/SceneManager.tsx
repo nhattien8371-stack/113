@@ -28,10 +28,10 @@ export const SceneManager: React.FC = () => {
   const getHoaPos = () => {
     if (isMobile) {
       switch (currentSceneId) {
-        case 6: return { x: 50, y: 'max(140px, 17vh)' };
-        case 9: return { x: 50, y: 'max(115px, 13vh)' };
-        case 13: return { x: 50, y: 'max(130px, 15vh)' };
-        default: return { x: 50, y: 'max(145px, 18vh)' };
+        case 6: return { x: 50, y: 'max(104px, 16vh)' };
+        case 9: return { x: 50, y: 'max(102px, 15.5vh)' };
+        case 13: return { x: 50, y: 'max(104px, 16vh)' };
+        default: return { x: 50, y: 'max(108px, 16.5vh)' };
       }
     }
     // Desktop coordinates
@@ -45,7 +45,7 @@ export const SceneManager: React.FC = () => {
 
   const getHoaScale = () => {
     const base = currentSceneConfig.butterflyScale || 1.15;
-    return isMobile ? base * 0.82 : base * 1.1;
+    return isMobile ? 1 : base * 1.05;
   };
 
   // Emotional keyword highlights mapped to each of the 13 parts
@@ -142,7 +142,7 @@ export const SceneManager: React.FC = () => {
     if (currentSceneId === 6) {
       return (
         <div className="relative w-full flex flex-col items-center px-4">
-          <div className="z-20 mt-60 sm:mt-20">
+          <div className="z-20 mt-44 sm:mt-20">
             <SurpriseGift />
           </div>
           <div className="z-20 mt-1 w-full max-w-lg">
@@ -160,7 +160,7 @@ export const SceneManager: React.FC = () => {
     if (currentSceneId === 9) {
       return (
         <div className="relative w-full flex flex-col items-center px-4 overflow-y-auto">
-          <div className="z-20 mt-52 sm:mt-14 w-full max-w-xl pb-16">
+          <div className="z-20 mt-44 sm:mt-14 w-full max-w-xl pb-16">
             <Envelope
               paragraphs={[
                 'Có lẽ thời điểm này hơi trễ để gửi những lời chúc "chính thức" đến những bông hoa ở đây, nhưng mà để mọi thứ có thể hoàn hảo và trọn vẹn nhất nên là...',
@@ -177,7 +177,7 @@ export const SceneManager: React.FC = () => {
     if (currentSceneId === 13) {
       return (
         <div className="relative w-full flex flex-col items-center px-4">
-          <div className="z-20 mt-56 sm:mt-68 w-full max-w-2xl">
+          <div className="z-20 mt-44 sm:mt-68 w-full max-w-2xl">
             <Finale />
           </div>
         </div>
@@ -187,7 +187,7 @@ export const SceneManager: React.FC = () => {
     // Parts 1, 2, 3, 4, 5, 7, 8, 10, 11, 12: Direct conversational speech bubble
     return (
       <div className="relative w-full flex flex-col items-center justify-center px-4">
-        <div className="z-20 mt-64 sm:mt-76 w-full max-w-lg">
+        <div className="z-20 mt-48 sm:mt-76 w-full max-w-lg">
           <StoryText
             lines={currentSceneConfig.dialogueLines}
             speakerName="Hoa ♡"
@@ -222,32 +222,42 @@ export const SceneManager: React.FC = () => {
       />
 
       {/* 4. Flying Character Hoa (Mascot) */}
-      {/* SEPARATION OF WRAPPERS (PHẦN 6): Outer wrapper strictly handles positioning & centering */}
+      {/* SEPARATION OF WRAPPERS: */}
+      {/* Wrapper 1: Absolute/Fixed coordinate positioning (only transitions coordinates, no transform conflict) */}
       <div
-        className="fixed pointer-events-auto z-25 transition-all duration-700 ease-out"
+        className="fixed pointer-events-auto z-25"
         style={{
           left: `${getHoaPos().x}%`,
-          top: `${getHoaPos().y}`,
+          top: getHoaPos().y,
           transform: 'translate(-50%, -50%)',
-          transitionProperty: 'left, top',
+          transition: 'left 0.7s cubic-bezier(0.34, 1.56, 0.64, 1), top 0.7s cubic-bezier(0.34, 1.56, 0.64, 1)',
         }}
       >
-        {/* Inner animation wrapper handles music bobbing, music sway tilt, and scale without overriding centering */}
-        <div
-          style={{
-            transform: `translateY(var(--hoa-bob, 0px)) rotate(calc(var(--hoa-tilt, 0) * 1deg)) scale(${
-              isTransitioning ? getHoaScale() * 1.05 : getHoaScale()
-            })`,
-            transformOrigin: 'center 75%',
-            willChange: 'transform',
-            transition: 'transform 0.4s ease-out',
-          }}
-        >
-          <ButterflyCharacter
-            mood={isTransitioning ? 'intro' : currentSceneConfig.butterflyMood}
-            scale={1}
-            isTransitioning={isTransitioning}
-          />
+        {/* Wrapper 2: Responsive Sizing Container (35-42% viewport on mobile, fixed 220px on desktop) */}
+        <div className="relative flex items-center justify-center w-[clamp(138px,39vw,162px)] sm:w-[220px] aspect-[220/260]">
+          {/* Wrapper 3: Pure CSS Hardware-Accelerated Idle Sway & Bobbing (Runs 60fps on iOS Safari & Android, low-power & no-sound safe) */}
+          <div
+            className="w-full h-full hoa-idle-sway"
+            style={{
+              transformOrigin: '50% 80%',
+            }}
+          >
+            {/* Wrapper 4: Audio-Reactive Boost & Scene Transition Scale */}
+            <div
+              className="w-full h-full"
+              style={{
+                transform: `scale(${isTransitioning ? 1.05 : 1}) scale(calc(1 + var(--beat-bounce, 0) * 1.5))`,
+                transformOrigin: '50% 80%',
+                willChange: 'transform',
+              }}
+            >
+              <ButterflyCharacter
+                mood={isTransitioning ? 'intro' : currentSceneConfig.butterflyMood}
+                scale={getHoaScale()}
+                isTransitioning={isTransitioning}
+              />
+            </div>
+          </div>
         </div>
       </div>
 

@@ -47,7 +47,7 @@ export const StoryText: React.FC<StoryTextProps> = ({
 
   return (
     <div
-      className={`relative glass-panel rounded-3xl p-5 sm:p-7 max-w-lg mx-auto text-center border border-[#F6B8CF]/40 shadow-2xl transition-all duration-700 ${className}`}
+      className={`relative glass-panel rounded-3xl p-4 sm:p-6 max-w-lg mx-auto text-center border border-[#F6B8CF]/40 shadow-2xl transition-all duration-700 ${className}`}
       style={{
         boxShadow: '0 12px 36px rgba(104, 80, 114, 0.4), inset 0 0 20px rgba(255, 247, 236, 0.1)',
       }}
