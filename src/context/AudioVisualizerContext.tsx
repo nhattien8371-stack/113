@@ -60,12 +60,22 @@ export const AudioVisualizerProvider: React.FC<AudioProviderProps> = ({
   const animFrameRef = useRef<number | null>(null);
   const synthIntervalRef = useRef<number | null>(null);
   const noteIndexRef = useRef(0);
+  const fileCheckFailedRef = useRef(false);
 
   // Dynamic visualizer state refs (to avoid React re-renders at 60fps)
   const energyRef = useRef(0); // 0 (idle) to 1 (full music reactivity)
   const smoothedBassRef = useRef(0);
   const isPlayingRef = useRef(false);
   const audioTypeRef = useRef<AudioSourceType>('none');
+
+  // Environment detection: local development supports testing local commercial MP3;
+  // public GitHub Pages uses licensed Web Audio Celesta Music Box directly without 404 loops.
+  const isLocalEnvironment =
+    typeof window !== 'undefined' &&
+    (window.location.hostname === 'localhost' ||
+      window.location.hostname === '127.0.0.1' ||
+      window.location.hostname === '0.0.0.0' ||
+      Boolean(import.meta.env.DEV));
 
   // Update refs when state changes
   useEffect(() => {
@@ -163,10 +173,18 @@ export const AudioVisualizerProvider: React.FC<AudioProviderProps> = ({
     }
   }, [getAudioContext]);
 
-  // Start the Music Box Melodic Arpeggio Loop
+  // Start the Music Box Melodic Arpeggio Loop with smooth fade-in
   const startFallbackMelody = useCallback(() => {
     if (synthIntervalRef.current !== null) {
       clearInterval(synthIntervalRef.current);
+    }
+
+    const ctx = getAudioContext();
+    if (ctx && gainNodeRef.current) {
+      const now = ctx.currentTime;
+      gainNodeRef.current.gain.cancelScheduledValues(now);
+      gainNodeRef.current.gain.setValueAtTime(0.01, now);
+      gainNodeRef.current.gain.linearRampToValueAtTime(0.22, now + 0.6);
     }
 
     // Play first note immediately
@@ -178,7 +196,7 @@ export const AudioVisualizerProvider: React.FC<AudioProviderProps> = ({
       playCelestaNote(CHIME_MELODY[noteIndexRef.current % CHIME_MELODY.length]);
       noteIndexRef.current++;
     }, 460);
-  }, [playCelestaNote]);
+  }, [getAudioContext, playCelestaNote]);
 
   const stopFallbackMelody = useCallback(() => {
     if (synthIntervalRef.current !== null) {
@@ -306,7 +324,10 @@ export const AudioVisualizerProvider: React.FC<AudioProviderProps> = ({
     }
 
     const audio = audioRef.current;
-    if (!audio) {
+
+    // Check if public production: if not local or if file check previously failed,
+    // start Celesta Music Box directly without triggering 404 network requests
+    if (!isLocalEnvironment || fileCheckFailedRef.current || !audio) {
       setAudioType('synth');
       setActiveTitle('Giai Điệu Khu Vườn ♫');
       setIsPlaying(true);
@@ -326,7 +347,8 @@ export const AudioVisualizerProvider: React.FC<AudioProviderProps> = ({
       }
     }
 
-    // Try playing local/licensed audio track first
+    // Local development: attempt playing local audio track
+    audio.volume = 0.05;
     audio.src = primarySrc;
     audio
       .play()
@@ -334,6 +356,16 @@ export const AudioVisualizerProvider: React.FC<AudioProviderProps> = ({
         setAudioType('file');
         setActiveTitle(title);
         setIsPlaying(true);
+        // Smooth volume fade-in
+        let vol = 0.05;
+        const fade = setInterval(() => {
+          if (vol < 0.65) {
+            vol += 0.05;
+            if (audio) audio.volume = Math.min(0.65, vol);
+          } else {
+            clearInterval(fade);
+          }
+        }, 50);
       })
       .catch(() => {
         // Fallback to secondary source
@@ -347,29 +379,57 @@ export const AudioVisualizerProvider: React.FC<AudioProviderProps> = ({
               setIsPlaying(true);
             })
             .catch(() => {
-              // Seamlessly activate the sweet Celesta Music Box synthesizer
+              // Mark file unavailable so subsequent toggles don't loop 404s
+              fileCheckFailedRef.current = true;
               setAudioType('synth');
               setActiveTitle('Giai Điệu Khu Vườn ♫');
               setIsPlaying(true);
               startFallbackMelody();
             });
         } else {
-          // Seamlessly activate the sweet Celesta Music Box synthesizer
+          fileCheckFailedRef.current = true;
           setAudioType('synth');
           setActiveTitle('Giai Điệu Khu Vườn ♫');
           setIsPlaying(true);
           startFallbackMelody();
         }
       });
-  }, [getAudioContext, primarySrc, fallbackSrc, title, startFallbackMelody]);
+  }, [
+    getAudioContext,
+    isLocalEnvironment,
+    primarySrc,
+    fallbackSrc,
+    title,
+    startFallbackMelody,
+  ]);
 
-  // Stop Music
+  // Stop Music with smooth fade-out
   const stopMusic = useCallback(() => {
-    stopFallbackMelody();
     const audio = audioRef.current;
-    if (audio) {
-      audio.pause();
+    const ctx = audioCtxRef.current;
+
+    // Fade out synth if active
+    if (gainNodeRef.current && ctx && ctx.state === 'running') {
+      const now = ctx.currentTime;
+      gainNodeRef.current.gain.cancelScheduledValues(now);
+      gainNodeRef.current.gain.linearRampToValueAtTime(0.001, now + 0.35);
     }
+
+    // Fade out HTML audio element if active
+    if (audio && !audio.paused) {
+      let vol = audio.volume;
+      const fadeOut = setInterval(() => {
+        if (vol > 0.08) {
+          vol -= 0.08;
+          if (audio) audio.volume = Math.max(0, vol);
+        } else {
+          clearInterval(fadeOut);
+          if (audio) audio.pause();
+        }
+      }, 40);
+    }
+
+    stopFallbackMelody();
     setIsPlaying(false);
   }, [stopFallbackMelody]);
 

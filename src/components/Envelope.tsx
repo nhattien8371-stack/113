@@ -44,8 +44,8 @@ export const Envelope: React.FC<EnvelopeProps> = ({
         <div className="absolute bottom-2 right-3 text-[#FFE5A3] font-handwriting text-lg sm:text-xl opacity-80">♡</div>
 
         {/* Letter Header */}
-        <div className="text-center mb-2.5 sm:mb-4 border-b border-[#F6B8CF]/30 pb-2 sm:pb-3">
-          <span className="font-handwriting text-xl sm:text-3xl text-[#9C5D76] font-bold block">
+        <div className="text-center mb-2 sm:mb-3.5 border-b border-[#F6B8CF]/30 pb-2 sm:pb-2.5">
+          <span className="font-handwriting text-xl sm:text-2xl md:text-3xl text-[#9C5D76] font-bold block">
             Gửi Những Bông Hoa 12A1
           </span>
           <span className="text-[10px] sm:text-xs text-[#8A7196] tracking-widest uppercase font-semibold">
@@ -54,14 +54,13 @@ export const Envelope: React.FC<EnvelopeProps> = ({
         </div>
 
         {/* Letter Content */}
-        <div className="space-y-2 sm:space-y-4 font-sans text-xs sm:text-base leading-relaxed text-[#3D2647]">
+        <div className="space-y-2 sm:space-y-3 font-sans text-xs sm:text-[15px] md:text-base leading-relaxed text-[#3D2647]">
           {paragraphs.map((p, idx) => (
             <p
               key={idx}
-              className="text-justify font-normal"
+              className="text-center sm:text-justify font-normal"
               style={{
-                textIndent: '1rem',
-                lineHeight: '1.6',
+                lineHeight: '1.65',
               }}
             >
               {p}
@@ -70,8 +69,8 @@ export const Envelope: React.FC<EnvelopeProps> = ({
         </div>
 
         {/* Letter Footer */}
-        <div className="mt-3 sm:mt-5 pt-2 sm:pt-3 border-t border-[#F6B8CF]/30 text-right">
-          <span className="font-handwriting text-lg sm:text-2xl text-[#9C5D76] font-semibold">
+        <div className="mt-2.5 sm:mt-4 pt-1.5 sm:pt-2.5 border-t border-[#F6B8CF]/30 text-right">
+          <span className="font-handwriting text-base sm:text-xl md:text-2xl text-[#9C5D76] font-semibold">
             Các chàng trai 12A1 ♡
           </span>
         </div>

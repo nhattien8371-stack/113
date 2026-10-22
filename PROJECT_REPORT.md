@@ -1,4 +1,4 @@
-# 🌸 BÁO CÁO DỰ ÁN V5 — HOA'S SECRET GARDEN (12A1)
+# 🌸 BÁO CÁO DỰ ÁN V6 — HOA'S SECRET GARDEN (12A1)
 *Khu Vườn Của Những Lời Chưa Nói — Món quà 20/10 gửi tặng các bạn nữ 12A1*
 
 ---
@@ -14,7 +14,39 @@
   - Mobile Safari/Chrome (390x844 - iPhone 14/15)
   - Small Mobile Viewport (375x667 - iPhone SE)
   - Android Viewport (412x915)
-  - Automated Playwright E2E Suite (`scripts/verify-hotfix-v5.cjs`).
+  - Automated Playwright E2E Suite (`scripts/verify-v6.cjs`).
+
+---
+
+## 2. NỘI DUNG MASTER PROMPT V6 ĐÃ HOÀN TẤT (100% YÊU CẦU)
+
+### 🎯 1. Sửa Nội Dung Lá Thư — Phần 9/13 (Xóa Đoạn Văn Trùng Lặp)
+- **Đã xóa triệt để**: Đoạn văn *"Có lẽ thời điểm này hơi trễ để gửi những lời chúc 'chính thức' đến những bông hoa ở đây, nhưng mà để mọi thứ có thể hoàn hảo và trọn vẹn nhất nên là..."* đã được gỡ bỏ hoàn toàn khỏi phần thân lá thư trong `src/components/SceneManager.tsx`.
+- **Nội dung thân lá thư duy nhất còn lại**:
+  > *"Sự chậm trễ của các chàng đây, hy vọng các bông hoa của 12A1 sẽ hoan hỉ và dùng bữa thật ngon nhé! 💗"*
+- **Chữ ký nguyên vẹn**:
+  > *"Các chàng trai 12A1 ♡"*
+- **Bảo toàn 13 phần kịch bản**: Hai phần lời thoại độc lập số 7 và số 8 vẫn giữ nguyên vẹn 100%. Toàn bộ câu chuyện vẫn chuẩn 13 phần.
+- **Bố cục lá thư**: Tự động thu gọn chiều cao vừa vặn, không còn khoảng trống thừa, không che khuất nút điều hướng, không bị thanh tiến trình đè lên trên iPhone SE (375x667), iPhone 14/15 và Desktop.
+
+### 🎯 2. Kiểm Tra & Đồng Nhất 2 File Nhạc MP3
+- **Vị trí kiểm tra**: `butterfly-garden/public/audio/`
+  1. `tung-ngay-yeu-em.mp3`: 3,649,643 bytes
+  2. `Từng Ngày Yêu Em.mp3`: 3,649,643 bytes
+- **Kết quả đối soát SHA-256**:
+  - `tung-ngay-yeu-em.mp3`: `B5DDD913D5547B3066481E8371EB798B65FDEB59D2917F7A61DA2DCBBEC0017A`
+  - `Từng Ngày Yêu Em.mp3`: `B5DDD913D5547B3066481E8371EB798B65FDEB59D2917F7A61DA2DCBBEC0017A`
+  - **Kết luận**: Hai file hoàn toàn giống hệt nhau về mặt nhị phân. Hệ thống ưu tiên quy ước tên file không dấu `tung-ngay-yeu-em.mp3` để chống lỗi mã hóa URL. Cả hai file vẫn được bảo toàn nguyên vẹn trong thư mục local.
+
+### 🎯 3. Phân Tách Rõ Ràng Nguồn Âm Thanh Local vs GitHub Pages
+- **Môi trường Local**: Phát trực tiếp file âm thanh `tung-ngay-yeu-em.mp3` đã có, hiển thị tên bài hát *"Từng Ngày Yêu Em — Bùi Trường Linh"*, âm lượng fade-in mượt mà, phân tích dải tần bass/mid điều khiển hoa lắc lư 60 FPS.
+- **Môi trường GitHub Pages (Công khai)**:
+  - Do bài hát thương mại không được đăng tải lên repository công khai để bảo vệ bản quyền (DMCA), hệ thống tự động kích hoạt **Bộ Tổng Hợp Music Box Celesta** (dual-oscillator sine + triangle overtone, lọc lowpass 2800Hz, vòng hợp âm 16 nốt Cmaj7 -> Am9 -> Fmaj7 -> Gsus4).
+  - Hoạt động trực tiếp mà không gửi request tìm file MP3 gây vòng lặp lỗi 404 trong Console.
+  - Hiển thị đúng và trung thực nguồn âm thanh thực tế: **`Giai Điệu Khu Vườn ♫`**.
+  - Không bị gián đoạn hay restart khi chuyển qua 13 cảnh.
+- **Motion Synchronization**: Khi có nhạc, hoa và nhân vật Hoa chuyển động đồng bộ theo nhịp; khi không có nhạc, hoạt ảnh idle thuần CSS vẫn lắc lư êm dịu.
+
 
 ---
 

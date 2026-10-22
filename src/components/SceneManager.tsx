@@ -160,10 +160,9 @@ export const SceneManager: React.FC = () => {
     if (currentSceneId === 9) {
       return (
         <div className="relative w-full flex flex-col items-center px-4 overflow-y-auto">
-          <div className="z-20 mt-44 sm:mt-14 w-full max-w-xl pb-16">
+          <div className="z-20 mt-44 sm:mt-14 w-full max-w-lg pb-12 sm:pb-16">
             <Envelope
               paragraphs={[
-                'Có lẽ thời điểm này hơi trễ để gửi những lời chúc "chính thức" đến những bông hoa ở đây, nhưng mà để mọi thứ có thể hoàn hảo và trọn vẹn nhất nên là...',
                 'Sự chậm trễ của các chàng đây, hy vọng các bông hoa của 12A1 sẽ hoan hỉ và dùng bữa thật ngon nhé! 💗',
               ]}
               isOpen={true}
